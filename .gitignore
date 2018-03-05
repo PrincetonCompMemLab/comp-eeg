@@ -1,0 +1,5 @@
+# Temp files and Data files
+*~
+*.mat
+*.png
+*.pdf
