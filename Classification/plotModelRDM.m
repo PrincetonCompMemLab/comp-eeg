@@ -50,5 +50,5 @@ colorbar
 
 set(gca, 'fontsize', 18);
 set(gcf, 'color', 'w');
-export_fig(f, [resultRoot 'CompEEG_ModelRDM_Z' num2str(doZ) ...
+export_fig(f, [resultRoot 'figures/CompEEG_ModelRDM_Z' num2str(doZ) ...
     '_' preproc '.pdf']);
