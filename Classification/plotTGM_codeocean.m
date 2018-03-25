@@ -8,6 +8,8 @@ function plotTGM_codeocean(subjects, preproc, compWinToUse, krWinToUse, ...
 %   subjects: the subjects to process, e.g. {'AA', 'BB', ...}
 %   compWinToUse: the windows from session 1 to use for training (9:36 in
 %   paper)
+%   krWinToUse: the windows from session 2 to use for testing (6:54 in
+%   paper)
 %   preproc: the preprocessing applied to the competition data (should
 %   match that used to load the krData)
 %   resultRoot: directory where results should be stored
