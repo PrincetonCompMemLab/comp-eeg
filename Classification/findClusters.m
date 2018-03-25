@@ -1,10 +1,10 @@
-function [clusters, clusterTestStat] = findClusters(data, options)
+function [clusters, clusterTestStat] = findClusters(data, labels, options)
 % findClusters: finds significant clusters in data according to options
 %
 % Inputs:
 %   data: a double array in one of the following two forms:
-%       numSamp x dim1 x condition
-%       numSamp x dim1 x dim2 x condition
+%       numSamp x dim1
+%       numSamp x dim1 x dim2
 %   options: a struct with any of the following fields:
 %       pValThresh - uncorrected pvalue used to threshold initial pvalues 
 %           to get clusters (default 0.05)
@@ -15,6 +15,7 @@ function [clusters, clusterTestStat] = findClusters(data, options)
 %       clusterTestStatistic - summary test statistic for a cluster. Only 
 %           one supported option: 'summed_t_values' the sum of the t values
 %           of the samples within the cluster (default)
+%       tail - tail for ttest "right" "left" or "both"
 % Outputs:
 %   clusters: a cell array where each entry is an array containing
 %       the (linear) indices of a cluster that meets the options criteria
@@ -23,36 +24,33 @@ function [clusters, clusterTestStat] = findClusters(data, options)
 % Are we dealing with 1D series data, or 2D series?
 numDim = length(size(data));
 
-if numDim == 3
-    [numSamp, numD1Points, numCond] = size(data);
-elseif numDim == 4
-    [numSamp, numD1Points, numD2Points, numCond] = size(data);
+if numDim == 2
+    [numSamp, numD1Points] = size(data);
+elseif numDim == 3
+    [numSamp, numD1Points, numD2Points] = size(data);
 else
     error('Unsupported number of dimensions');
 end
 
 % Collect differences for calculating t values (for cluster
 % calculation) and p values (for thresholding)
-if numDim == 3
-    pooledDifferences = diff(data, 1, 3);
+if numDim == 2
     acrossSubjectTValues = nan(numD1Points, 1);
     acrossSubjectPValues = nan(numD1Points, 1);
 else
-    pooledDifferences = diff(data, 1, 4);
     acrossSubjectTValues = nan(numD1Points, numD2Points);
     acrossSubjectPValues = nan(numD1Points, numD2Points);
 end
 
-
 % Calculate t values and p values for each time or time-sensor pair across
 % subjects (uncorrected)
 for t = 1:numD1Points
-    if numDim == 3
-        [~, acrossSubjectPValues(t), ~, stats] = ttest(data(:,t, 1), data(:,t, 2), 'Tail', 'right');
+    if numDim == 2
+        [~, acrossSubjectPValues(t), ~, stats] = ttest2(data(labels==0,t), data(labels==1,t), 'Tail', options.tail, 'Vartype', 'unequal');
         acrossSubjectTValues(t) = stats.tstat;
     else
         for se = 1:numD2Points
-            [~, acrossSubjectPValues(t, se), ~, stats] = ttest(data(:, t, se,1), data(:, t, se,2), 'Tail', 'right');
+            [~, acrossSubjectPValues(t, se), ~, stats] = ttest2(data(labels==0, t, se), data(labels==1, t, se), 'Tail', options.tail, 'Vartype', 'unequal');
             acrossSubjectTValues(t, se) = stats.tstat;
         end
     end
@@ -62,7 +60,7 @@ end
 
 threshold_linear = acrossSubjectPValues <= options.pValThresh;
 
-if numDim == 3
+if numDim == 2
     clusters = formCluster1D(threshold_linear);
 else
     clusters = formCluster2D(threshold_linear, 0);

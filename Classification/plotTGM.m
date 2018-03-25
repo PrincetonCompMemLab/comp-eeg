@@ -1,5 +1,5 @@
 function plotTGM(subjects, preproc, compWinToUse, ...
-    resultRoot, figTag, clusterOptions, behav_pattern)
+    resultRoot, figTag, clusterOptions, behav_pattern, doSubZ)
 % plotTGM: plots the temporal generalization metrix (TGM) training on
 % session 1 data and testing on session 2 data. Performs cluster
 % permutation test and subject-level bootstrap.
@@ -17,15 +17,28 @@ function plotTGM(subjects, preproc, compWinToUse, ...
 %   behav_pattern: either 'all', or a matrix describing which session 2
 %   behavioral patterns to plot, e.g. [0, 1, 1, 1] or [0, 0, 1, 1;0, 1, 1,
 %   1]
+%   doSubZ: If 1, zscore within-subject
 
 numSub = length(subjects);
 
 if strcmp(behav_pattern, 'all')
     behav_str = behav_pattern;
-    behav_pattern = [0, 0, 1, 1; 0, 1, 0, 1; ...
-    0, 1, 1, 0; 0, 1, 1, 1; 1, 0, 0, 1; ...
-    1, 0, 1, 0; 1, 0, 1, 1; 1, 1, 0, 0; ...
-    1, 1, 0, 1; 1, 1, 1, 0; 1, 1, 1, 1];
+    behav_pattern = [0, 0, 0, 0; ...
+        0, 0, 0, 1; ...
+        0, 0, 1, 0; ...
+        0, 0, 1, 1; ...
+        0, 1, 0, 0; ...
+        0, 1, 0, 1; ...
+        0, 1, 1, 0; ...
+        0, 1, 1, 1; ...
+        1, 0, 0, 0; ...
+        1, 0, 0, 1; ...
+        1, 0, 1, 0; ...
+        1, 0, 1, 1; ...
+        1, 1, 0, 0; ...
+        1, 1, 0, 1; ...
+        1, 1, 1, 0; ...
+        1, 1, 1, 1];
 elseif size(behav_pattern, 1) > 1
     behav_str = num2str(reshape(behav_pattern', 1, []));
 else
@@ -33,11 +46,16 @@ else
 end
 behav_str(isspace(behav_str)) = [];
 
+if doSubZ
+    subZ_str = '_subZ';
+else
+    subZ_str = '';
+end
 
 fnameString = [resultRoot '%s/KRanalysis_TGM_' preproc '.mat'];
-figureString = [resultRoot 'figures/KR_TGM_FirstCorrect-R4_%s_' preproc '_' behav_str figTag '.pdf'];
-clusterFileString = [resultRoot 'clusters_pVals_histograms_TGM_thresh%0.2f_' preproc '_' behav_str figTag '.mat'];
-clusterBootString = [resultRoot 'clusters_pVals_bootstrap_TGM_thresh%0.2f_' preproc '_' behav_str figTag '.mat'];
+figureString = [resultRoot 'figures/KR_TGM_FirstCorrect-R4_%s_' preproc '_' behav_str subZ_str figTag '.pdf'];
+clusterFileString = [resultRoot 'clusters_pVals_histograms_TGM_thresh%0.2f_' preproc '_' behav_str subZ_str figTag '.mat'];
+clusterBootString = [resultRoot 'clusters_pVals_bootstrap_TGM_thresh%0.2f_' preproc '_' behav_str subZ_str figTag '.mat'];
 %%
 krTGM_R = [];
 krTGM_F = [];
@@ -49,6 +67,8 @@ IndividualSubjectFirstCorrR = cell(numSub, 1);
 IndividualSubjectFirstCorrF = cell(numSub, 1);
 num_good = 0;
 num_tot = 0;
+subjectSampleInds_R = [];
+subjectSampleInds_F = [];
 for i = 1:numSub
     load(sprintf(fnameString, subjects{i}));
     
@@ -83,11 +103,12 @@ for i = 1:numSub
     
     IndividualSubjectDataR{i} = krTrajToAdd_R;
     IndividualSubjectDataF{i} = krTrajToAdd_F;
-%     numSamp = min([sum(krLabels == 1 & goodItems), sum(krLabels == 0 & goodItems)]);
     
-    krTGM_R = cat(1, krTGM_R, krTrajToAdd_R);%(1:numSamp,:,:,:));
-    krTGM_F = cat(1, krTGM_F, krTrajToAdd_F);%(1:numSamp,:,:,:));
-%     keyboard;
+    krTGM_R = cat(1, krTGM_R, krTrajToAdd_R);
+    krTGM_F = cat(1, krTGM_F, krTrajToAdd_F);
+    
+    subjectSampleInds_R = cat(1, subjectSampleInds_R, i*ones(size(krTrajToAdd_R, 1), 1));
+    subjectSampleInds_F = cat(1, subjectSampleInds_F, i*ones(size(krTrajToAdd_F, 1), 1));
 end
 
 fprintf('%d/%d trials\n', num_good, num_tot);
@@ -118,30 +139,45 @@ numKRT = length(krWinToUse);
 numF = size(krTGM_F, 1);
 numR = size(krTGM_R, 1);
 numCT_short = size(krTGM_F, 4);
-numSamp = min([numF, numR]);
 
-diffMatR = nan(numSamp, numKRT, numCT_short);
-diffMatF = nan(numSamp, numKRT, numCT_short);
-for i = 1:numSamp
+diffMatR = nan(numR, numKRT, numCT_short);
+diffMatF = nan(numF, numKRT, numCT_short);
+for i = 1:numR
     diffMatR(i,:,:) = squeeze(krTGM_R(i,firstRoundCorr_R(i),:,:) - krTGM_R(i,4,:,:));
+end
+for i = 1:numF
     diffMatF(i,:,:) = squeeze(krTGM_F(i,firstRoundCorr_F(i),:,:) - krTGM_F(i,4,:,:));
 end
 
-[~, rep_corr] = ttest(diffMatR, diffMatF, 'Tail', 'right');
+if doSubZ
+    for i = 1:numSub
+        numSamp_R = sum(subjectSampleInds_R == i);
+        subMatR = diffMatR(subjectSampleInds_R == i, :, :);
+        subMatF = diffMatF(subjectSampleInds_F == i, :, :);
+        catMat = zscore(cat(1, subMatR, subMatF), 1);
+        diffMatR(subjectSampleInds_R == i, :, :) = catMat(1:numSamp_R, :, :);
+        diffMatF(subjectSampleInds_F == i, :, :) = catMat((numSamp_R+1):end, :, :);
+    end
+end
+
+
+[~, rep_corr] = ttest2(diffMatR, diffMatF, 'Tail', 'right', 'Vartype', 'unequal');
 rep_corr = squeeze(rep_corr);
 
-[~, rep_opp] = ttest(diffMatR, diffMatF, 'Tail', 'left');
+[~, rep_opp] = ttest2(diffMatR, diffMatF, 'Tail', 'left', 'Vartype', 'unequal');
 rep_opp = squeeze(rep_opp);
 
-rep_diff = squeeze(mean(diffMatR - diffMatF, 1));
+rep_diff = squeeze(mean(diffMatR, 1) - mean(diffMatF, 1));
 
 rep = zeros(size(rep_opp));
-rep(rep_opp < 0.05) = -1;
-rep(rep_opp < 0.01) = -2;
+rep(rep_opp < 0.10) = -1;
+rep(rep_opp < 0.05) = -2;
+rep(rep_opp < 0.01) = -3;
 rep(rep_opp < 0.001) = -5;
 
-rep(rep_corr < 0.05) = 1;
-rep(rep_corr < 0.01) = 2;
+rep(rep_corr < 0.10) = 1;
+rep(rep_corr < 0.05) = 2;
+rep(rep_corr < 0.01) = 3;
 rep(rep_corr < 0.001) = 5;
 %%
 f1 = figure;
@@ -164,19 +200,25 @@ set(gca, 'FontSize', 18);
 set(f2, 'Color', 'w');
 export_fig(f2, sprintf(figureString, 'PVal'));
 %%
-dataToCluster = cat(4, diffMatR, diffMatF);
+dataToCluster = cat(1, diffMatR, diffMatF);
+conditionLabels = [zeros(numR, 1); ones(numF, 1)];
 clusterFile = sprintf(clusterFileString, clusterOptions.pValThresh);
 
 if exist(clusterFile, 'file')
     load(clusterFile)
 else
     [clusters, pVals, permutationClusters, ...
-        permutationHist, permutationSize] = clusterPermTestPooledSub_fullTime(dataToCluster, clusterOptions);
+        permutationHist, permutationSize] = clusterPermTestPooledSub_fullTime(dataToCluster, conditionLabels, clusterOptions);
     save(clusterFile, ...
         'clusters', 'pVals', 'permutationHist', 'permutationSize', ...
         'permutationClusters');
 end
 %%
+if isempty(clusters)
+    fprintf('No significant clusters found.\n')
+    return
+end
+
 [~, sigClust] = min(pVals(:,2));
 sizeSigClust = size(clusters{sigClust},1);
 f3 = figure;
@@ -192,6 +234,7 @@ set(f3, 'Color', 'w');
 export_fig(f3, sprintf(figureString, 'clusterSizeHist'));
 %%
 f4 = figure;
+
 imagesc(krWinTime, ctWinTime, rep', [-5, 5]);
 colorbar
 hold on
@@ -201,14 +244,11 @@ color_text = {'ro', 'go', 'ko', 'mo', ...
         'rd', 'gd', 'kd', 'md',};
 nr = length(krWinTime);
 for i = 1:length(clusters)
-    if pVals(i,2) <= 0.05
+    if pVals(i,2) <= 1.05
         clust = clusters{i};
         for j = 1:length(clust)
             row = mod(clust(j), nr);
             col = floor(clust(j)/nr) + 1;
-            if col == 12 && row == 0
-                keyboard;
-            end
             if row == 0
                 row = nr;
                 col = col - 1;

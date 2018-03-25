@@ -36,7 +36,7 @@ numSubjects = size(IndividualSubjectDataR, 1);
 [krTGM_R, krTGM_F, firstRoundCorr_R, firstRoundCorr_F] = collectData(IndividualSubjectDataR, IndividualSubjectDataF, ...
     IndividualSubjectFirstCorrR, IndividualSubjectFirstCorrF);
 
-trueClusterT = scoreCluster(krTGM_R, krTGM_F, firstRoundCorr_R, firstRoundCorr_F, clusterToUse);
+trueClusterT = scoreCluster(krTGM_R, krTGM_F, firstRoundCorr_R, firstRoundCorr_F, clusterToUse, options);
 
 permClusterT = nan(numPerms, 1);
 [~, ~, numTKR, numTC] = size(krTGM_R);
@@ -51,11 +51,14 @@ for p = 1:numPerms
     IndividualSubjectFirstCorrR(subjectSample), IndividualSubjectFirstCorrF(subjectSample));
 
     [permClusterT(p), diffMatR, diffMatF] = scoreCluster(krTGM_R, krTGM_F, ...
-        firstRoundCorr_R, firstRoundCorr_F, clusterToUse);
+        firstRoundCorr_R, firstRoundCorr_F, clusterToUse, options);
     
     
-    dataToCluster = cat(4, diffMatR, diffMatF);
-    clustersBoot = findClusters(dataToCluster, options);
+    dataToCluster = cat(1, diffMatR, diffMatF);
+    numR = size(diffMatR, 1);
+    numF = size(diffMatF, 1);
+    conditionLabels = [zeros(numR, 1); ones(numF, 1)];
+    clustersBoot = findClusters(dataToCluster, conditionLabels, options);
     [~, uniClustInd] = unique(cellfun(@num2str, ...
     cellfun(@(x) reshape(x, 1, []), clustersBoot, 'UniformOutput', false), ...
     'UniformOutput', false));
@@ -93,21 +96,21 @@ end
 end
 
 function [clusterT, diffMatR,diffMatF] = scoreCluster(krTGM_R, krTGM_F, ...
-    firstRoundCorr_R, firstRoundCorr_F, cluster)
+    firstRoundCorr_R, firstRoundCorr_F, cluster, options)
 
 numF = size(krTGM_F, 1);
 [numR, ~, numKRT, numCT] = size(krTGM_R);
 
-numSamp = min([numF, numR]);
-
-diffMatR = nan(numSamp, numKRT, numCT);
-diffMatF = nan(numSamp, numKRT, numCT);
-for i = 1:numSamp
+diffMatR = nan(numR, numKRT, numCT);
+diffMatF = nan(numF, numKRT, numCT);
+for i = 1:numR
     diffMatR(i,:,:) = squeeze(krTGM_R(i,firstRoundCorr_R(i),:,:) - krTGM_R(i,4,:,:));
+end
+for i = 1:numF
     diffMatF(i,:,:) = squeeze(krTGM_F(i,firstRoundCorr_F(i),:,:) - krTGM_F(i,4,:,:));
 end
 
-[~, ~, ~, stats] = ttest(diffMatR, diffMatF, 'Tail', 'right');
+[~, ~, ~, stats] = ttest2(diffMatR, diffMatF, 'Tail', options.tail, 'Vartype', 'unequal');
 
 clusterT = sum(stats.tstat(cluster));
 end
