@@ -1,5 +1,5 @@
 function [ itemTraj ] = runSess2Prediction(sub, ...
-    krData, krLabels, compWin, preproc, dataRoot, resultRoot)
+    krData, krLabels, compWin, preproc, dataRoot, resultRoot, isStudy)
 % runSess2Prediction: trains a classifier on session 1 data from the
 % given window and applies it to all windows in the given session 2 data
 %
@@ -12,11 +12,18 @@ function [ itemTraj ] = runSess2Prediction(sub, ...
 %   match that used to load the krData)
 %   dataRoot: directory containing the data to be loaded
 %   resultRoot: directory where results should be stored
+%   isStudy: If 1, use study trials instead of recall trials
 %
 % Outputs:
 %   itemTraj: items x rounds x time matrix containing the class probability
 %   on the session 2 data for each item, round, and timepoint
 numChan = 64;
+
+if isStudy
+    label_rows = 0;
+else
+    label_rows = 1;
+end
 
 if strcmp(preproc, 'theta')
     proc_str = '_Vis_BP2-200_N60_Ref_Hilbert-theta_Epochs_Features_Overlap_Time';
@@ -48,8 +55,8 @@ else
     save(fnameWeights, 'B', 'mu', 'sigma');
 end
 
-krData = krData(krLabels(:,1) == 1, :);
-krLabels = krLabels(krLabels(:,1) ==1, 2);
+krData = krData(krLabels(:,1) == label_rows, :);
+krLabels = krLabels(krLabels(:,1) == label_rows, 2);
 
 
 numWinToTry = size(krData,2)/numChan;

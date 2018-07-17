@@ -1,6 +1,6 @@
 function [krTraj, krLabels, skippedItems, ...
     responseTraj, winTime] = createTGM(sub, preproc, compWinToUse, ...
-    dataRoot, behaveDataRoot, resultRoot, answerFile)
+    dataRoot, behaveDataRoot, resultRoot, answerFile, isStudy)
 % createTGM: creates a temporal generalization metrix (TGM) training on
 % session 1 data and testing on session 2 data.
 %
@@ -14,6 +14,7 @@ function [krTraj, krLabels, skippedItems, ...
 %   behaveDataRoot: directory containing behavioral data
 %   resultRoot: directory where results should be stored
 %   answerFile: file containing correct answers to KR questions
+%   isStudy: If 1, use study trials instead of recall trials
 %
 % Outputs:
 %   krTraj: items x rounds x sess2time x sess1time matrix of class
@@ -33,12 +34,18 @@ else
     proc_str = preproc;
 end
 
+if isStudy
+    study_str = '_study';
+else
+    study_str = '';
+end
+
 KRanswer = importdata(answerFile);
 
 numCompWin = length(compWinToUse);
 
 loadFname = [dataRoot sub '/CompEEG__KR_' sub proc_str '.mat'];
-fname = [resultRoot sub '/KRanalysis_TGM_' preproc '.mat'];
+fname = [resultRoot sub '/KRanalysis_TGM_' preproc study_str '.mat'];
 
 krTraj = [];
 krLabels = [];
@@ -49,7 +56,7 @@ featData = double(featData);
 itemTraj = nan(length(KRanswer), 4, size(featData,2)/64, numCompWin);
 for iWin = 1:numCompWin
     itemTraj(:,:,:,iWin) = runSess2Prediction(sub, featData, labels, compWinToUse(iWin), ...
-        preproc, dataRoot, resultRoot);
+        preproc, dataRoot, resultRoot, isStudy);
 end
 
 %% Combine with final quiz answers

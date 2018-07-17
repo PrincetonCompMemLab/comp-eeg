@@ -1,5 +1,5 @@
 function plotTGM_codeocean(subjects, preproc, compWinToUse, krWinToUse, ...
-    resultRoot, figTag, clusterOptions, behav_pattern, doSubZ)
+    resultRoot, figTag, clusterOptions, behav_pattern, doSubZ, isStudy)
 % plotTGM: plots the temporal generalization metrix (TGM) training on
 % session 1 data and testing on session 2 data. Performs cluster
 % permutation test and subject-level bootstrap.
@@ -20,6 +20,7 @@ function plotTGM_codeocean(subjects, preproc, compWinToUse, krWinToUse, ...
 %   behavioral patterns to plot, e.g. [0, 1, 1, 1] or [0, 0, 1, 1;0, 1, 1,
 %   1]
 %   doSubZ: If 1, zscore within-subject
+%   isStudy: If 1, use study trials instead of recall trials
 
 numSub = length(subjects);
 
@@ -54,10 +55,16 @@ else
     subZ_str = '';
 end
 
-fnameString = [resultRoot '%s/KRanalysis_TGM_' preproc '.mat'];
-figureString = [resultRoot 'figures/KR_TGM_FirstCorrect-R4_%s_' preproc '_' behav_str subZ_str figTag '.pdf'];
-clusterFileString = [resultRoot 'clusters_pVals_histograms_TGM_thresh%0.2f_' preproc '_' behav_str subZ_str figTag '.mat'];
-clusterBootString = [resultRoot 'clusters_pVals_bootstrap_TGM_thresh%0.2f_' preproc '_' behav_str subZ_str figTag '.mat'];
+if isStudy
+    study_str = '_study';
+else
+    study_str = '';
+end
+
+fnameString = [resultRoot '%s/KRanalysis_TGM_' preproc study_str '.mat'];
+figureString = [resultRoot 'figures/KR_TGM_FirstCorrect-R4_%s_' preproc '_' study_str behav_str subZ_str figTag '.pdf'];
+clusterFileString = [resultRoot 'clusters_pVals_histograms_TGM_thresh%0.2f_' preproc '_' study_str behav_str subZ_str figTag '.mat'];
+clusterBootString = [resultRoot 'clusters_pVals_bootstrap_TGM_thresh%0.2f_' preproc '_' study_str behav_str subZ_str figTag '.mat'];
 %%
 krTGM_R = [];
 krTGM_F = [];
