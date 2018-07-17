@@ -6,6 +6,10 @@ Contains all code required to run and analyze data from the paper:
     Reductions in Retrieval Competition Predict the Benefit of Repeated Testing
         Nicole S. Rafidi, Justin C. Hulbert, Paula Pacheco, and Kenneth A. Norman
 
+Code was written and run in MATLAB 2014b
+
+PLEASE NOTE: due to the fact that random seeds were assigned in shuffle mode for nested cross-validation during classifier training, permutation testing, and boostrapping, it may not be possible to perfectly replicate results in paper.
+
 *Contents*
 
 Experiment: Directory containing files needed to run the experiment (i.e. present the stimuli to participants). Code was written for Psychtoolbox Version 3.0.12 - Flavor: beta - Corresponds to SVN Revision 6094.
