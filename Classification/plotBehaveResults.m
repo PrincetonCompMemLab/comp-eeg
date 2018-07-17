@@ -18,6 +18,9 @@ meanRespTrajInc = [];
 meanCorr = [];
 krTrajList = cell(numSub, 1);
 krLabelList = cell(numSub, 1);
+perSubRespTrajCorr = nan(numSub, 4);
+perSubRespTrajInc = nan(numSub, 4);
+perSubRespTraj = nan(numSub, 4);
 perSubCorr = nan(numSub, 1);
 configurationPerf = zeros(16,2);
 for s = 1:numSub
@@ -103,6 +106,9 @@ for s = 1:numSub
     meanRespTrajCorr = cat(1, meanRespTrajCorr, responseTraj(corrAnswers,:));
     meanRespTrajInc = cat(1, meanRespTrajInc, responseTraj(~corrAnswers,:));
     meanCorr = cat(1, meanCorr, corrAnswers);
+    perSubRespTrajCorr(s, :) = nanmean(responseTraj(corrAnswers, :), 1);
+    perSubRespTrajInc(s, :) = nanmean(responseTraj(~corrAnswers, :), 1);
+    perSubRespTraj(s, :) = nanmean(responseTraj, 1);
     perSubCorr(s) = nanmean(corrAnswers);
 end
 %% Configuration plots
@@ -137,8 +143,8 @@ set (f, 'Units', 'normalized', 'Position', [0,0,1,1]);
 export_fig(f, [resultRoot 'figures/Behavioral/configPrevSplit' figTag '.pdf']);
 %%
 f1 = figure;
-totalMean = [nanmean(meanRespTraj, 1) nanmean(meanCorr)];
-totalStd = [nanstd(meanRespTraj) nanstd(meanCorr)]./sqrt(sum(~isnan(meanCorr), 1));
+totalMean = [nanmean(perSubRespTraj, 1) nanmean(perSubCorr)];
+totalStd = [nanstd(perSubRespTraj) nanstd(perSubCorr)]./sqrt(numSub);
 bar(1:5, totalMean);
 hold on
 set(gca, 'XTickLabel',{'R1', 'R2', 'R3', 'R4', 'T'});
@@ -161,12 +167,12 @@ set(gcf, 'color', 'w');
 export_fig(f15, [resultRoot 'figures/Behavioral/subHist_Session3' figTag '.pdf']);
 
 f2 = figure;
-corrIncMean = [nanmean(meanRespTrajInc, 1); nanmean(meanRespTrajCorr, 1)];
+corrIncMean = [nanmean(perSubRespTrajInc, 1); nanmean(perSubRespTrajCorr, 1)];
 bar(1:4, corrIncMean');
 hold on
 set(gca, 'XTickLabel',{'R1', 'R2', 'R3', 'R4'});
-errorbar(1.145:4.145, corrIncMean(2,:), nanstd(meanRespTrajCorr)./sqrt(size(meanRespTrajCorr(~isnan(meanRespTrajCorr(:,1)), :), 1)), 'k.');
-errorbar(0.855:3.855, corrIncMean(1,:), nanstd(meanRespTrajInc)./sqrt(size(meanRespTrajInc(~isnan(meanRespTrajInc(:,1)), :), 1)), 'r.');
+errorbar(1.145:4.145, corrIncMean(2,:), nanstd(perSubRespTrajCorr)./sqrt(numSub), 'k.');
+errorbar(0.855:3.855, corrIncMean(1,:), nanstd(perSubRespTrajInc)./sqrt(numSub), 'r.');
 legend('Session 3 Forgotten', 'Session 3 Remembered', 'Location', 'NorthWest');
 xlabel('Round of Testing');
 ylabel('Fraction Correct in Session 2');
