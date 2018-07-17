@@ -1,5 +1,19 @@
-function rt_drop_pval = plotRT(subjects, dataRoot, resultRoot, ...
+function rt_drop_pval = plotRT(subjects, resultRoot, ...
     rtRoot, ansRoot, stimRoot)
+% plotRT: plots the trajectory of reaction time (RT) over the course of
+% Session 2, for trials answered correctly in session 2. Also computes the
+% predictive power of reaction time drop for Session 3 behavior and returns
+% the p value. Depends on results from createTGM.m.
+%
+% Inputs:
+%   subjects: the subjects to process, e.g. {'AA', 'BB', ...}
+%   resultRoot: directory where results should be stored
+%   rtRoot: directory where reaction time files are stored
+%   ansRoot: directory where subject Session 2 answers are stored
+%   stimRoot: directory where stimuli lists are stored
+% Outputs:
+%   rt_drop_pval: pvalue contrasting RT drop in Session 2 for subsequently 
+%   remembered and subsequently forgotten items in Session 3
 
 numSub = length(subjects);
 
@@ -11,7 +25,7 @@ ans_file = [ansRoot '/%s_answers.mat'];
 KRanswer = importdata([stimRoot '/KR_answer.txt']);
 KRtest = importdata([stimRoot '/KR_test.txt']);
 
-fnameString = '%sresults/KRanalysis_TGM_%s_full.mat';
+fnameString = [resultRoot '/KRanalysis_TGM_%s_full.mat'];
 
 item_names = cat(2, KRtest, KRanswer);
 num_items = size(item_names, 1);
@@ -24,7 +38,7 @@ for i_sub = 1:numSub
     sub_ans_load = load(sprintf(ans_file, sub));
     sub_ans = sub_ans_load.answerList;
     
-    load(sprintf(fnameString, dataRoot, sub));
+    load(sprintf(fnameString, sub));
     old_good_items = sum(responseTraj, 2) > 1 | sum(responseTraj(:,1:3),2) > 0;
     
     goodItems = false(num_items, 1);
