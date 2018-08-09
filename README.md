@@ -4,7 +4,9 @@ Code for the Competitive Retrieval EEG project
 Contains all code required to run and analyze data from the paper:
     
     Reductions in Retrieval Competition Predict the Benefit of Repeated Testing
-        Nicole S. Rafidi, Justin C. Hulbert, Paula Pacheco, and Kenneth A. Norman
+        Nicole S. Rafidi, Justin C. Hulbert, Paula P. Brooks, and Kenneth A. Norman
+
+Paper can be found here:  https://rdcu.be/35V3
 
 Code was written and run in MATLAB 2014b
 
