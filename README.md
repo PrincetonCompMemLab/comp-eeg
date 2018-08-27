@@ -12,6 +12,7 @@ Code was written and run in MATLAB 2014b
 
 PLEASE NOTE: due to the fact that random seeds were assigned in shuffle mode for nested cross-validation during classifier training, permutation testing, and boostrapping, it may not be possible to perfectly replicate results in paper.
 
+NIMH Data Archive: https://ndar.nih.gov/study.html?id=604
 Additional required reaction time data: https://drive.google.com/open?id=17vvkGS5ZUpUvWCDIZFDiOKmaF9rQh2E2
 
 *Contents*
